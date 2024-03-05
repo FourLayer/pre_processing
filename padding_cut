@@ -1,0 +1,39 @@
+#구글 코랩에서 실행
+#조용한부분 삭제 wav버전
+
+!pip install pydub
+import os
+from pydub import AudioSegment
+import librosa
+import numpy as np
+import soundfile as sf
+
+# Silence trimming function
+def trim_silence(audio_path, top_db=20):
+    # Load audio file (wav)
+    y, sr = librosa.load(audio_path)
+
+    # Trim the beginning and ending silence below a threshold
+    yt, index = librosa.effects.trim(y, top_db=top_db)
+
+    return yt, sr
+
+# Process function for each folder and save in new directories
+def process_and_save(base_dir, new_base_dir):
+    if not os.path.exists(new_base_dir):
+        os.makedirs(new_base_dir)
+
+    for filename in os.listdir(base_dir):
+        if filename.endswith(".wav"):
+            old_file_path = os.path.join(base_dir, filename)
+            new_file_path = os.path.join(new_base_dir, filename)
+
+            audio_data, sr = trim_silence(old_file_path)
+            sf.write(new_file_path, audio_data, sr)
+
+# Define directories and folders
+human_dirs = '앞뒤_조용한부분_제거할_폴더_경로'
+new_human_dirs = '앞뒤_조용한부분_제거한_폴더_경로'
+
+# Process human dirs
+process_and_save(human_dirs, new_human_dirs)
