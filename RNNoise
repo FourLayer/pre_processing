@@ -1,0 +1,51 @@
+#구글 코랩에서 실행
+#rnnoise이용해서 노이즈 제거하기
+
+!git clone https://gitlab.xiph.org/xiph/rnnoise.git
+!pip install soundfile pydub
+!apt install -y ffmpeg
+!sudo apt-get install -y autoconf automake libtool gcc
+
+%cd rnnoise
+!./autogen.sh
+!./configure
+!make
+
+import os
+
+# 현재 디렉토리의 .libs 폴더에 librnnoise.so.0가 있다고 가정하였습니다.
+# 실제 경로에 맞게 수정해야 합니다.
+lib_path = os.path.join(os.getcwd(), '.libs')
+
+if lib_path not in os.environ['LD_LIBRARY_PATH']:
+    os.environ['LD_LIBRARY_PATH'] += ':' + lib_path
+
+
+import os
+from pydub import AudioSegment
+import soundfile as sf
+import subprocess
+
+# 입력 및 출력 폴더 경로 설정
+input_folder = '노이즈_제거할_폴더_경로'
+output_folder = '노이즈_제거한_폴더_경로''
+
+# 입력 폴더 내의 모든 WAV 파일에 대한 노이즈 제거 반복
+for filename in os.listdir(input_folder):
+    if filename.endswith(".wav"):
+        input_path = os.path.join(input_folder, filename)
+        output_path = os.path.join(output_folder, filename)
+
+        # WAV 파일을 RAW PCM으로 변환
+        data, samplerate = sf.read(input_path)
+        sf.write('input.raw', data, samplerate, subtype='PCM_16')
+
+        # rnnoise_demo 실행 파일 호출
+        subprocess.run(['./examples/.libs/rnnoise_demo', 'input.raw', 'output.raw'])
+
+        # RAW PCM를 WAV로 변환하고 수정된 출력 경로 사용
+        data, samplerate = sf.read('output.raw', channels=1, samplerate=48000, subtype='PCM_16')
+        sf.write(output_path, data, samplerate)
+
+# 처리 완료 메시지 출력
+print("Denoising completed. The denoised audio files are saved in the folder:", output_folder)
